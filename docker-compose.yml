@@ -2,6 +2,8 @@ version: '3.8'
 
 services:
   backend:
+    labels:
+      - "coolify.managed=true"
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -31,6 +33,8 @@ services:
       dockerfile: Dockerfile
     container_name: analize-pdf-celery
     command: celery -A app.tasks worker --loglevel=info --pool=solo
+    labels:
+      - "coolify.managed=true"
     environment:
       - POSTGRES_URL=${POSTGRES_URL}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
@@ -51,6 +55,8 @@ services:
       args:
         - VITE_API_URL=${VITE_API_URL:-http://localhost:8000}
     container_name: analize-pdf-frontend
+    labels:
+      - "coolify.managed=true"
     ports:
       - "3000:80"
     depends_on:
