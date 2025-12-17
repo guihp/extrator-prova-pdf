@@ -2,13 +2,16 @@
 FROM python:3.9-slim
 
 # Instalar dependências do sistema (Tesseract OCR e outras)
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
     tesseract-ocr \
     tesseract-ocr-por \
     tesseract-ocr-eng \
     libgl1-mesa-glx \
     libglib2.0-0 \
-    && rm -rf /var/lib/apt/lists/*
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
 # Definir diretório de trabalho
 WORKDIR /app
