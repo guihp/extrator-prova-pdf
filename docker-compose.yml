@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: analize-pdf-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - POSTGRES_URL=${POSTGRES_URL}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - REDIS_URL=${REDIS_URL}
+      - BASE_URL=${BASE_URL:-http://localhost:8000}
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/images:/app/images
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  celery:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: analize-pdf-celery
+    command: celery -A app.tasks worker --loglevel=info --pool=solo
+    environment:
+      - POSTGRES_URL=${POSTGRES_URL}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - REDIS_URL=${REDIS_URL}
+      - BASE_URL=${BASE_URL:-http://localhost:8000}
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/images:/app/images
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=${VITE_API_URL:-http://localhost:8000}
+    container_name: analize-pdf-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
