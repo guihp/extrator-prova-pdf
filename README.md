@@ -9,19 +9,16 @@ Sistema completo para análise automática de PDFs de provas, extração de ques
 - ✅ Extração de todas as imagens do PDF
 - ✅ Mapeamento inteligente de imagens às questões usando IA
 - ✅ Análise com Google Gemini (estrutura) e ChatGPT (validação)
-- ✅ OCR com Tesseract para extrair texto de imagens
-- ✅ Deduplicação inteligente de imagens (hash MD5 e perceptual hash)
-- ✅ Armazenamento em PostgreSQL
+- ✅ Armazenamento no Supabase (PostgreSQL + Storage)
 - ✅ Processamento assíncrono com Celery
 - ✅ Interface web React com TypeScript
-- ✅ Pronto para deploy no Coolify com Docker
 
 ## 📋 Pré-requisitos
 
 - Python 3.9+
 - Node.js 18+
-- PostgreSQL (banco de dados)
-- Redis (URL pública já configurada)
+- Redis (para Celery)
+- Conta Supabase
 - API Keys: Google Gemini e OpenAI
 
 ## 🛠️ Instalação
@@ -62,12 +59,12 @@ cd frontend
 npm install
 ```
 
-## 🗄️ Configuração do PostgreSQL
+## 🗄️ Configuração do Supabase
 
-1. Crie um banco de dados PostgreSQL
-2. Execute o script SQL em `postgres_schema.sql` no seu banco
-3. Ou deixe o sistema criar as tabelas automaticamente na primeira execução
-4. Configure as credenciais no arquivo `.env`
+1. Crie um projeto no Supabase
+2. Execute o script SQL em `supabase_schema.sql` no SQL Editor
+3. Crie um bucket de storage chamado `provas-images` (ou ajuste no código)
+4. Configure as políticas de acesso conforme necessário
 
 ## 🚀 Executando
 
@@ -119,12 +116,10 @@ AnalizePDF/
 ## 🔧 Variáveis de Ambiente
 
 ```env
-# PostgreSQL
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=your_password
-POSTGRES_DB=analize_pdf
+# Supabase
+SUPABASE_URL=your_supabase_url
+SUPABASE_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_KEY=your_supabase_service_key
 
 # Google Gemini
 GEMINI_API_KEY=your_gemini_api_key
@@ -132,11 +127,8 @@ GEMINI_API_KEY=your_gemini_api_key
 # OpenAI
 OPENAI_API_KEY=your_openai_api_key
 
-# Redis (URL pública já configurada)
-REDIS_URL=redis://default:BW8XH6cfzwX7oPpc0HOiBDHg56WtAxqJg6sChzbw2a3dzFdhbsLOVbQJSivzMJtv@72.60.146.143:5433/0
-
-# Configurações
-BASE_URL=http://localhost:8000
+# Redis
+REDIS_URL=redis://localhost:6379/0
 ```
 
 ## 📡 API Endpoints
@@ -164,33 +156,8 @@ BASE_URL=http://localhost:8000
 
 - O processamento é assíncrono, então o upload retorna imediatamente
 - Use polling ou WebSockets para atualizar o status em tempo real
-- As imagens são armazenadas localmente na pasta `backend/images/` e servidas via FastAPI
+- As imagens são armazenadas no Supabase Storage com URLs públicas
 - Cada questão mantém referência às suas imagens associadas
-- Redis público já está configurado, mas pode ser alterado no `.env`
-
-## 🐳 Deploy com Docker
-
-### Desenvolvimento Local
-
-```bash
-# Usar docker-compose
-docker-compose up -d
-
-# Ou build manual
-docker build -t analize-pdf-backend ./backend
-docker build -t analize-pdf-frontend ./frontend
-```
-
-### Deploy no Coolify
-
-Veja o guia completo em [COOLIFY.md](./COOLIFY.md)
-
-**Resumo rápido:**
-1. Configure o repositório Git no Coolify
-2. Use o `docker-compose.yml` ou configure serviços individuais
-3. Configure as variáveis de ambiente
-4. Configure volumes persistentes para `uploads/` e `images/`
-5. Deploy!
 
 ## 🐛 Troubleshooting
 
@@ -198,10 +165,4 @@ Veja o guia completo em [COOLIFY.md](./COOLIFY.md)
 - Verifique as variáveis de ambiente no arquivo `.env`
 - Confirme que o bucket do Supabase Storage foi criado
 - Verifique os logs do Celery para erros de processamento
-- No macOS, use `--pool=solo` no Celery para evitar erros SIGSEGV
-
-## 📚 Documentação Adicional
-
-- [COOLIFY.md](./COOLIFY.md) - Guia completo de deploy no Coolify
-- [COMO_RODAR.md](./COMO_RODAR.md) - Instruções detalhadas de execução local
 

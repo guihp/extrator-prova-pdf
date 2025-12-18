@@ -4,11 +4,12 @@ from fastapi.responses import StreamingResponse
 from typing import List, Dict
 import os
 import uuid
+import httpx
 from app.services.db_service import db_service
 from app.services.export_service import export_service
 from app.tasks.process_pdf import process_pdf_task
 from app.tasks import celery_app
-from app.models.schemas import ProvaResponse, QuestaoResponse, ImagemResponse, ProvaCompletaResponse
+from app.models.schemas import ProvaResponse, QuestaoResponse, ImagemResponse, ProvaCompletaResponse, QuestaoFormatadaResponse
 from app.config import settings
 
 router = APIRouter()
@@ -99,6 +100,47 @@ async def get_questao_individual(questao_id: int):
     if not questao:
         raise HTTPException(status_code=404, detail="Questão não encontrada")
     return questao
+
+
+@router.get("/questoes/formatadas/listar", response_model=List[QuestaoFormatadaResponse])
+async def listar_questoes_formatadas():
+    """Lista todas as questões formatadas (formatado = 'true')"""
+    questoes = db_service.get_questoes_formatadas()
+    return questoes
+
+
+@router.post("/questoes/formatar", response_model=Dict)
+async def formatar_questoes():
+    """Chama o webhook para formatar questões não formatadas"""
+    try:
+        webhook_url = "https://n8n-dwok8s4ocwwosgsso4ooo0c8.flowera.com.br/webhook/formatar-perguntas-prova-pdf"
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.post(webhook_url, timeout=30.0)
+            response.raise_for_status()
+            
+            count = db_service.get_questoes_nao_formatadas_count()
+            
+            return {
+                "message": "Webhook chamado com sucesso",
+                "questoes_nao_formatadas": count,
+                "status": "sucesso"
+            }
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(
+            status_code=e.response.status_code,
+            detail=f"Erro ao chamar webhook: {e.response.text}"
+        )
+    except httpx.RequestError as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro de conexão com webhook: {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao formatar questões: {str(e)}"
+        )
 
 
 @router.get("/{prova_id}/exportar/pdf")

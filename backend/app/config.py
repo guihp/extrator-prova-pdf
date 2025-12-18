@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     openai_api_key: str
     
     # Redis
-    redis_url: str = "redis://default:BW8XH6cfzwX7oPpc0HOiBDHg56WtAxqJg6sChzbw2a3dzFdhbsLOVbQJSivzMJtv@72.60.146.143:5433/0"
+    redis_url: str = "redis://localhost:6379/0"
     
     # Configurações
     upload_dir: str = "uploads"

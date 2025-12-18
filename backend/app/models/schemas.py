@@ -27,6 +27,23 @@ class QuestaoResponse(BaseModel):
     numero: int
     texto: str
     ordem: int
+    texto_formatado: Optional[str] = ""
+    formatado: bool = False
+
+    class Config:
+        from_attributes = True
+
+
+class QuestaoFormatadaResponse(BaseModel):
+    id: int
+    prova_id: int
+    prova_id_display: Optional[int] = None
+    prova_nome: Optional[str] = None
+    numero: int
+    texto: str
+    ordem: int
+    texto_formatado: Optional[str] = ""
+    formatado: bool = False
 
     class Config:
         from_attributes = True

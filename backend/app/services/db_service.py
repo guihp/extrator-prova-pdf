@@ -169,6 +169,8 @@ class DatabaseService:
             "numero": questao.numero,
             "texto": questao.texto,
             "ordem": questao.ordem,
+            "texto_formatado": getattr(questao, 'texto_formatado', None) or "",
+            "formatado": getattr(questao, 'formatado', False),
             "criado_em": questao.criado_em.isoformat() if questao.criado_em else None
         }
     
@@ -193,6 +195,38 @@ class DatabaseService:
                 Imagem.questao_id == questao_id
             ).order_by(Imagem.posicao_pagina).all()
             return [self._imagem_to_dict(img) for img in imagens]
+        finally:
+            db.close()
+    
+    def get_questoes_formatadas(self) -> List[Dict[str, Any]]:
+        """Busca todas as questões formatadas (formatado = True) com informações da prova"""
+        db = self._get_db()
+        try:
+            questoes = db.query(Questao, Prova).join(
+                Prova, Questao.prova_id == Prova.id
+            ).filter(
+                Questao.formatado == True
+            ).order_by(Questao.criado_em.desc()).all()
+            
+            result = []
+            for questao, prova in questoes:
+                questao_dict = self._questao_to_dict(questao)
+                questao_dict["prova_nome"] = prova.nome
+                questao_dict["prova_id_display"] = prova.id
+                result.append(questao_dict)
+            
+            return result
+        finally:
+            db.close()
+    
+    def get_questoes_nao_formatadas_count(self) -> int:
+        """Retorna a quantidade de questões não formatadas"""
+        db = self._get_db()
+        try:
+            count = db.query(Questao).filter(
+                Questao.formatado == False
+            ).count()
+            return count
         finally:
             db.close()
     

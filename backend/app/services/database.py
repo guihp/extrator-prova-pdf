@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, ForeignKey, BigInteger
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, ForeignKey, BigInteger, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session, relationship
 from sqlalchemy.sql import func
@@ -32,6 +32,8 @@ class Questao(Base):
     numero = Column(Integer, nullable=False)
     texto = Column(Text, nullable=False)
     ordem = Column(Integer, nullable=False)
+    texto_formatado = Column(Text, nullable=False, default="")
+    formatado = Column(Boolean, nullable=False, default=False)
     criado_em = Column(DateTime(timezone=True), server_default=func.now())
     
     prova = relationship("Prova", back_populates="questoes")

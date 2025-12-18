@@ -1,142 +1,187 @@
-# 🚀 Guia Rápido de Deploy
+# 🚀 Guia de Deploy - Coolify
 
-## 📦 Preparação do Repositório
+Este documento descreve como fazer deploy do projeto no Coolify.
 
-O projeto está pronto para deploy! Todos os arquivos necessários foram criados:
+## 📋 Pré-requisitos
 
-### Arquivos Criados:
-- ✅ `backend/Dockerfile` - Imagem Docker do backend
-- ✅ `frontend/Dockerfile` - Imagem Docker do frontend  
-- ✅ `docker-compose.yml` - Orquestração completa
-- ✅ `.dockerignore` - Arquivos ignorados no build
-- ✅ `COOLIFY.md` - Guia detalhado para Coolify
+- Conta no Coolify configurada
+- Repositório GitHub com o código
+- Banco PostgreSQL acessível
+- Redis acessível (pode ser no próprio Coolify ou externo)
 
-## 🎯 Deploy no Coolify - Passo a Passo
+## 🔧 Configuração no Coolify
 
-### Opção 1: Docker Compose (Mais Simples)
+### 1. Variáveis de Ambiente
 
-1. **No Coolify, crie um novo recurso:**
-   - Tipo: `Docker Compose`
-   - Repositório: `https://github.com/guihp/extrator-prova-pdf.git`
-   - Branch: `main`
+Configure as seguintes variáveis de ambiente no Coolify para o **Backend**:
 
-2. **Configure as variáveis de ambiente:**
-   ```
-   POSTGRES_URL=postgresql://user:password@host:port/database
-   GEMINI_API_KEY=sua_chave_aqui
-   OPENAI_API_KEY=sua_chave_aqui
-   REDIS_URL=redis://user:password@host:port/0
-   BASE_URL=https://api.seudominio.com
-   VITE_API_URL=https://api.seudominio.com
-   ```
+```env
+# PostgreSQL
+POSTGRES_URL=postgresql://usuario:senha@host:porta/database
 
-3. **Configure volumes persistentes:**
-   - `./backend/uploads` → `/app/uploads`
-   - `./backend/images` → `/app/images`
+# APIs
+GEMINI_API_KEY=sua_chave_gemini
+OPENAI_API_KEY=sua_chave_openai
 
-4. **Deploy!** O Coolify detectará automaticamente o `docker-compose.yml`
+# Redis
+REDIS_URL=redis://usuario:senha@host:porta/0
 
-### Opção 2: Serviços Individuais
+# Configurações
+UPLOAD_DIR=uploads
+IMAGES_DIR=images
+MAX_FILE_SIZE=10485760
+BASE_URL=https://api.seudominio.com
+```
 
-#### Backend (FastAPI)
+Configure as seguintes variáveis de ambiente para o **Frontend**:
 
-1. Tipo: `Dockerfile`
-2. Dockerfile Path: `backend/Dockerfile`
-3. Porta: `8000`
-4. Variáveis de ambiente: (ver acima)
-5. Volumes: `/app/uploads` e `/app/images`
+```env
+VITE_API_BASE_URL=https://api.seudominio.com
+```
 
-#### Celery Worker
+### 2. Serviços Necessários
 
-1. Tipo: `Dockerfile`
-2. Dockerfile Path: `backend/Dockerfile`
-3. Comando: `celery -A app.tasks worker --loglevel=info --pool=solo`
-4. Variáveis de ambiente: (mesmas do backend)
-5. Volumes: (mesmos do backend)
+#### Backend (FastAPI + Celery)
 
-#### Frontend (React)
+**Serviço 1: FastAPI (Backend)**
+- **Porta**: 8000
+- **Comando de Build**: (se usar Docker, configure o Dockerfile)
+- **Comando de Inicialização**: 
+  ```bash
+  cd backend && pip install -r requirements.txt && uvicorn app.main:app --host 0.0.0.0 --port 8000
+  ```
+- **Health Check**: `/health`
 
-1. Tipo: `Dockerfile`
-2. Dockerfile Path: `frontend/Dockerfile`
-3. Porta: `80`
-4. Build Args: `VITE_API_URL=https://api.seudominio.com`
-5. Variáveis de ambiente: `VITE_API_URL=https://api.seudominio.com`
+**Serviço 2: Celery Worker**
+- **Comando de Inicialização**:
+  ```bash
+  cd backend && celery -A app.tasks.celery_app worker --loglevel=info
+  ```
+- ⚠️ **Importante**: Celery precisa das mesmas variáveis de ambiente do backend
 
-## ✅ Checklist Antes do Deploy
+#### Frontend (React + Vite)
 
-- [ ] Repositório Git configurado e código commitado
-- [ ] Banco PostgreSQL acessível e schema executado (`postgres_schema.sql`)
+**Serviço: Frontend**
+- **Porta**: 3000 (ou a que você configurar)
+- **Comando de Build**: 
+  ```bash
+  cd frontend && npm install && npm run build
+  ```
+- **Comando de Inicialização**:
+  ```bash
+  cd frontend && npm run preview
+  ```
+- **Ou usar nginx**: Servir a pasta `frontend/dist` com nginx
+
+### 3. Banco de Dados
+
+Execute o script SQL no PostgreSQL antes de iniciar:
+
+```bash
+# Execute o arquivo postgres_schema.sql e ADICIONAR_COLUNA_FORMATADO.sql
+```
+
+Ou deixe o sistema criar automaticamente (a primeira vez que rodar, o FastAPI criará as tabelas).
+
+### 4. Estrutura de Diretórios
+
+Certifique-se de que os diretórios existam no servidor:
+
+```bash
+backend/uploads/
+backend/images/
+```
+
+Ou configure no Coolify para criar esses diretórios.
+
+## 🐳 Docker (Opcional)
+
+Se preferir usar Docker, você pode criar os seguintes arquivos:
+
+### backend/Dockerfile
+```dockerfile
+FROM python:3.9-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+### docker-compose.yml (para desenvolvimento local)
+```yaml
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - backend/.env
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/images:/app/images
+
+  celery:
+    build: ./backend
+    command: celery -A app.tasks.celery_app worker --loglevel=info
+    env_file:
+      - backend/.env
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/images:/app/images
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+```
+
+## ✅ Checklist de Deploy
+
+- [ ] Variáveis de ambiente configuradas no Coolify
+- [ ] Banco de dados PostgreSQL acessível e schema executado
 - [ ] Redis acessível
-- [ ] API Keys obtidas (Gemini e OpenAI)
-- [ ] Domínios configurados (se necessário)
-- [ ] Variáveis de ambiente preparadas
+- [ ] Backend (FastAPI) rodando e respondendo em `/health`
+- [ ] Celery Worker rodando
+- [ ] Frontend buildado e servindo
+- [ ] Frontend configurado com URL correta da API
+- [ ] Diretórios `uploads/` e `images/` criados e com permissões corretas
+- [ ] Testado upload de PDF
+- [ ] Testado visualização de questões formatadas
 
-## 🔧 Configuração do Banco de Dados
+## 🔍 Troubleshooting
 
-Execute o schema SQL antes do primeiro deploy:
-
-```bash
-# Conecte ao seu PostgreSQL e execute:
-psql -h seu_host -U seu_usuario -d seu_banco -f postgres_schema.sql
-```
-
-Ou deixe o sistema criar automaticamente na primeira execução.
-
-## 🌐 Configuração de Domínios
-
-### Se usar domínios separados:
-- Backend: `api.seudominio.com` → Configure `BASE_URL` e `VITE_API_URL`
-- Frontend: `seudominio.com` → Configure `VITE_API_URL` apontando para o backend
-
-### Se usar mesmo domínio com paths:
-- Configure reverse proxy no Coolify para rotear `/api` para o backend
-
-## 📝 Comandos Úteis
-
-### Ver logs:
-```bash
-# No Coolify, use a interface ou:
-docker logs analize-pdf-backend
-docker logs analize-pdf-celery
-docker logs analize-pdf-frontend
-```
-
-### Testar API:
-```bash
-curl https://api.seudominio.com/health
-# Deve retornar: {"status":"ok"}
-```
-
-### Testar Frontend:
-```bash
-curl https://seudominio.com
-# Deve retornar HTML
-```
-
-## 🐛 Problemas Comuns
+### Backend não conecta ao banco
+- Verifique se `POSTGRES_URL` está correto
+- Verifique se o banco aceita conexões do servidor do Coolify
 
 ### Celery não processa tarefas
 - Verifique se o Redis está acessível
-- Verifique a variável `REDIS_URL`
-- Verifique os logs do worker
+- Verifique se `REDIS_URL` está correto
+- Verifique os logs do Celery
 
-### Frontend não conecta ao backend
-- Verifique se `VITE_API_URL` está correto
-- Verifique CORS (já configurado para `*`)
-- Verifique se o backend está acessível
+### Frontend não carrega dados
+- Verifique se `VITE_API_BASE_URL` está apontando para o backend correto
+- Verifique CORS no backend (já está configurado para `allow_origins=["*"]`)
+- Verifique se o backend está respondendo
 
 ### Imagens não aparecem
-- Verifique volumes persistentes
-- Verifique permissões dos diretórios
-- Verifique `BASE_URL` no backend
+- Verifique se o diretório `images/` existe
+- Verifique se `BASE_URL` está correto
+- Verifique permissões de leitura dos arquivos
 
-## 📚 Mais Informações
+## 📝 Notas
 
-Para detalhes completos, veja:
-- [COOLIFY.md](./COOLIFY.md) - Guia completo e detalhado
-- [README.md](./README.md) - Documentação geral do projeto
-
----
-
-**Pronto para deploy! 🎉**
+- O backend precisa rodar na porta 8000 (ou a que você configurar)
+- O Celery precisa rodar como um serviço separado
+- O frontend pode ser servido como SPA (Single Page Application) usando nginx ou similar
+- Considere usar volumes persistentes para `uploads/` e `images/` no Coolify
 

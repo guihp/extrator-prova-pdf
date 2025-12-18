@@ -1,15 +1,12 @@
 import axios from 'axios'
 
-// Usar variável de ambiente ou fallback para localhost
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
 export interface Prova {
   id: number
   nome: string
   arquivo_original: string
   status: string
-  etapa?: string | null
-  progresso?: number | null
   criado_em: string
 }
 
@@ -19,6 +16,13 @@ export interface Questao {
   numero: number
   texto: string
   ordem: number
+  texto_formatado?: string
+  formatado?: boolean
+}
+
+export interface QuestaoFormatada extends Questao {
+  prova_nome?: string
+  prova_id_display?: number
 }
 
 export interface Imagem {
@@ -68,7 +72,17 @@ export const getImagens = async (provaId: number): Promise<Imagem[]> => {
   return response.data
 }
 
-export const cancelarTarefasPendentes = async (): Promise<{ message: string; provas_atualizadas: number }> => {
+export const getQuestoesFormatadas = async (): Promise<QuestaoFormatada[]> => {
+  const response = await axios.get(`${API_BASE_URL}/provas/questoes/formatadas/listar`)
+  return response.data
+}
+
+export const formatarQuestoes = async (): Promise<{ message: string; questoes_nao_formatadas: number; status: string }> => {
+  const response = await axios.post(`${API_BASE_URL}/provas/questoes/formatar`)
+  return response.data
+}
+
+export const cancelarTarefasPendentes = async (): Promise<{ message: string; tarefas_canceladas: number; provas_atualizadas: number }> => {
   const response = await axios.post(`${API_BASE_URL}/provas/cancelar-pendentes`)
   return response.data
 }
