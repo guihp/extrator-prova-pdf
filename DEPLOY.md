@@ -185,3 +185,26 @@ services:
 - O frontend pode ser servido como SPA (Single Page Application) usando nginx ou similar
 - Considere usar volumes persistentes para `uploads/` e `images/` no Coolify
 
+## ⚠️ Importante: Configuração do docker-compose.yml
+
+**NÃO mapeie portas no docker-compose.yml quando usando Coolify!**
+
+O Coolify gerencia networking e portas automaticamente através dos domínios configurados. Mapeamentos de porta explícitos (como `ports: - "8000:8000"`) causam conflitos e erros como "port is already allocated".
+
+### Configuração Correta
+
+Use `expose` em vez de `ports`:
+
+```yaml
+services:
+  backend:
+    expose:
+      - "8000"  # Expor apenas internamente, Coolify gerencia o roteamento
+      
+  frontend:
+    expose:
+      - "80"  # Nginx roda na porta 80
+```
+
+O Coolify detecta automaticamente as portas através dos labels `coolify.managed=true` e roteia o tráfego através dos domínios configurados (ex: `api.flowera.com.br` e `app.flowera.com.br`).
+

@@ -7,8 +7,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     environment:
       - POSTGRES_URL=${POSTGRES_URL}
       - POSTGRES_HOST=${POSTGRES_HOST}
@@ -70,8 +70,8 @@ services:
       dockerfile: Dockerfile
       args:
         - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:8000}
-    ports:
-      - "3000:3000"
+    expose:
+      - "80"
     environment:
       - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:8000}
     restart: unless-stopped
