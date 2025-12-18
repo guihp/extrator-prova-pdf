@@ -22,7 +22,7 @@ services:
       - UPLOAD_DIR=${UPLOAD_DIR:-uploads}
       - IMAGES_DIR=${IMAGES_DIR:-images}
       - MAX_FILE_SIZE=${MAX_FILE_SIZE:-10485760}
-      - BASE_URL=${BASE_URL:-http://localhost:8000}
+      - BASE_URL=${BASE_URL:-https://api.flowera.com.br}
     volumes:
       - ./backend/uploads:/app/uploads
       - ./backend/images:/app/images
@@ -54,7 +54,7 @@ services:
       - UPLOAD_DIR=${UPLOAD_DIR:-uploads}
       - IMAGES_DIR=${IMAGES_DIR:-images}
       - MAX_FILE_SIZE=${MAX_FILE_SIZE:-10485760}
-      - BASE_URL=${BASE_URL:-http://localhost:8000}
+      - BASE_URL=${BASE_URL:-https://api.flowera.com.br}
     volumes:
       - ./backend/uploads:/app/uploads
       - ./backend/images:/app/images
@@ -69,11 +69,11 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:8000}
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-https://api.flowera.com.br}
     expose:
       - "80"
     environment:
-      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:8000}
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-https://api.flowera.com.br}
     restart: unless-stopped
     depends_on:
       - backend
