@@ -8,6 +8,8 @@ export interface Prova {
   arquivo_original: string
   status: string
   criado_em: string
+  progresso?: number | null
+  etapa?: string | null
 }
 
 export interface Questao {
